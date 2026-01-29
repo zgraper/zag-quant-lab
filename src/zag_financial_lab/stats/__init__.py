@@ -77,12 +77,20 @@ def assign_regime_labels(
     dict
         Mapping from regime number to descriptive label
         
+    Raises
+    ------
+    ValueError
+        If sort_by column does not exist in regime_stats
+        
     Notes
     -----
     Labels are descriptive only and should not be interpreted as predictive
     categories. Market regimes are statistical constructs identified from
     historical data.
     """
+    if sort_by not in regime_stats.columns:
+        raise ValueError(f"Column '{sort_by}' not found in regime statistics")
+    
     # Sort regimes by the specified feature
     sorted_stats = regime_stats.sort_values(sort_by)
     

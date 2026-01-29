@@ -52,7 +52,8 @@ def generate_sample_price_data(
     
     # Generate dates
     end_date = datetime.now()
-    start_date = end_date - timedelta(days=int(n_days * 1.4))  # Account for weekends
+    # Multiply by 1.4 to account for weekends/holidays (252 trading days / 365 calendar days ≈ 0.69)
+    start_date = end_date - timedelta(days=int(n_days * 1.4))
     dates = pd.date_range(start=start_date, end=end_date, freq='B')[:n_days]
     
     # Generate returns with different regime periods

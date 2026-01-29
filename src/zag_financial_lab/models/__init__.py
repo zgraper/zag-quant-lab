@@ -84,6 +84,7 @@ class GaussianRegimeDetector:
         # Suppress convergence warnings for cleaner output
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=RuntimeWarning)
+            warnings.filterwarnings("ignore")  # Catch ConvergenceWarning too
             self.model_.fit(X)
         
         self.is_fitted_ = True

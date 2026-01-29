@@ -87,7 +87,7 @@ def load_price_data(
             from .sample_data import generate_sample_price_data
             n_days = 500 if period == "2y" else 250 if period == "1y" else 750
             return generate_sample_price_data(n_days=n_days, seed=42)
-        except:
+        except Exception:
             raise ValueError(f"Error loading data for {ticker}: {str(e)}")
 
 

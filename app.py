@@ -118,13 +118,15 @@ if run_analysis:
     with st.spinner(f"Loading data for {ticker}..."):
         try:
             # Load data
+            is_sample = ticker.upper() == "SAMPLE"
             data = load_price_data(ticker, period=period)
             validate_price_data(data)
             
-            # Check if we're using sample data
+            # Display success message
             if len(data) > 0:
                 st.success(f"✓ Loaded {len(data)} days of data for {ticker}")
-                if ticker.upper() == "SAMPLE" or data.index[0].year < 2020:
+                # Indicate if using sample data
+                if is_sample or ticker.upper() == "SAMPLE":
                     st.info("📊 Using sample/synthetic data for demonstration purposes.")
             
         except Exception as e:
