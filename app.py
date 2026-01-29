@@ -123,7 +123,7 @@ if run_analysis:
             validate_price_data(data)
             
             # Display success message
-            if len(data) > 0:
+            if not data.empty:
                 st.success(f"✓ Loaded {len(data)} days of data for {ticker}")
                 # Indicate if using sample data
                 if is_sample or ticker.upper() == "SAMPLE":
