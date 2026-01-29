@@ -123,11 +123,10 @@ if run_analysis:
             validate_price_data(data)
             
             # Display success message
-            if len(data) > 0:
-                st.success(f"✓ Loaded {len(data)} days of data for {ticker}")
-                # Indicate if using sample data
-                if is_sample or ticker.upper() == "SAMPLE":
-                    st.info("📊 Using sample/synthetic data for demonstration purposes.")
+            st.success(f"✓ Loaded {len(data)} days of data for {ticker}")
+            # Indicate if using sample data
+            if is_sample or ticker.upper() == "SAMPLE":
+                st.info("📊 Using sample/synthetic data for demonstration purposes.")
             
         except Exception as e:
             st.error(f"Error loading data: {str(e)}")
