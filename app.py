@@ -11,6 +11,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import sys
+import traceback
 from pathlib import Path
 
 # Add src to path
@@ -130,6 +131,7 @@ if run_analysis:
             
         except Exception as e:
             st.error(f"Error loading data: {str(e)}")
+            st.code(traceback.format_exc())
             st.stop()
     
     with st.spinner("Preparing features..."):
