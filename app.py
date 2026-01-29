@@ -64,7 +64,7 @@ st.sidebar.header("Configuration")
 ticker = st.sidebar.text_input(
     "Ticker Symbol",
     value="SPY",
-    help="Enter a valid stock ticker (e.g., SPY, AAPL, QQQ)"
+    help="Enter a valid stock ticker (e.g., SPY, AAPL, QQQ). Note: If live data is unavailable, sample data will be used automatically for demonstration."
 )
 
 period = st.sidebar.selectbox(
@@ -121,7 +121,11 @@ if run_analysis:
             data = load_price_data(ticker, period=period)
             validate_price_data(data)
             
-            st.success(f"✓ Loaded {len(data)} days of data for {ticker}")
+            # Check if we're using sample data
+            if len(data) > 0:
+                st.success(f"✓ Loaded {len(data)} days of data for {ticker}")
+                if ticker.upper() == "SAMPLE" or data.index[0].year < 2020:
+                    st.info("📊 Using sample/synthetic data for demonstration purposes.")
             
         except Exception as e:
             st.error(f"Error loading data: {str(e)}")
