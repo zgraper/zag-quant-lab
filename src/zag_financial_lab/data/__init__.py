@@ -67,6 +67,18 @@ def load_price_data(
             data = yf.download(ticker, start=start_date, end=end_date, progress=False)
         else:
             data = yf.download(ticker, period=period, progress=False)
+
+        # Normalize yfinance output (handle MultiIndex columns)
+        if isinstance(data.columns, pd.MultiIndex):
+            # If single ticker, drop the ticker level and keep OHLCV columns
+            if len(data.columns.levels) == 2:
+                # Most common: level0=Price field, level1=Ticker
+                # Select this ticker if present; otherwise take the first ticker
+                tickers = list(data.columns.levels[1])
+                t = ticker if ticker in tickers else tickers[0]
+                data = data.xs(t, axis=1, level=1)
+            else:
+                data.columns = ["_".join(map(str, c)).strip() for c in data.columns.to_flat_index()]
             
         if data.empty:
             # Try sample data as fallback
@@ -117,11 +129,14 @@ def validate_price_data(data: pd.DataFrame) -> bool:
         raise ValueError("Insufficient data points (minimum 30 required)")
         
     # Check for excessive missing values
-    if data['Close'].isna().sum() / len(data) > 0.1:
+    close = data["Close"]
+    # If Close is accidentally a DataFrame, reduce to scalar missing ratio
+    missing_ratio = close.isna().to_numpy().mean() if hasattr(close, "to_numpy") else pd.isna(close).mean()
+    if missing_ratio > 0.1:
         raise ValueError("Too many missing values in Close prices (>10%)")
         
     # Check for non-positive prices
-    if (data['Close'] <= 0).any():
+    if (pd.DataFrame(close) <= 0).to_numpy().any():
         raise ValueError("Non-positive prices detected")
         
     return True
