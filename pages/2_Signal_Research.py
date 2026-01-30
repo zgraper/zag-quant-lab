@@ -288,7 +288,6 @@ if run_analysis:
                 x='signal',
                 y='forward_return',
                 opacity=0.5,
-                trendline='ols',
                 title=f"{signal_name} vs {forward_horizon}-Day Forward Return"
             )
             fig_scatter.update_layout(
