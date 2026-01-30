@@ -594,3 +594,271 @@ def plot_cumulative_returns(
     )
     
     return fig
+
+
+# ============================================================================
+# Stress Testing Visualizations
+# ============================================================================
+
+def plot_stress_comparison_equity(
+    baseline_returns: pd.Series,
+    stressed_returns: pd.Series,
+    scenario_name: str = "Stressed Scenario"
+) -> go.Figure:
+    """
+    Compare cumulative returns between baseline and stressed scenarios.
+    
+    Parameters
+    ----------
+    baseline_returns : pd.Series
+        Baseline portfolio returns
+    stressed_returns : pd.Series
+        Stressed portfolio returns
+    scenario_name : str
+        Name of the stress scenario
+        
+    Returns
+    -------
+    go.Figure
+        Plotly figure object
+        
+    Notes
+    -----
+    Shows how portfolio value evolves under baseline vs stress scenarios.
+    """
+    baseline_cum = (1 + baseline_returns).cumprod()
+    stressed_cum = (1 + stressed_returns).cumprod()
+    
+    fig = go.Figure()
+    
+    fig.add_trace(go.Scatter(
+        x=baseline_cum.index,
+        y=(baseline_cum - 1) * 100,
+        mode='lines',
+        name='Baseline',
+        line=dict(color='navy', width=2)
+    ))
+    
+    fig.add_trace(go.Scatter(
+        x=stressed_cum.index,
+        y=(stressed_cum - 1) * 100,
+        mode='lines',
+        name=scenario_name,
+        line=dict(color='red', width=2, dash='dash')
+    ))
+    
+    fig.add_hline(y=0, line_dash="dot", line_color="gray")
+    
+    fig.update_layout(
+        title="Cumulative Returns: Baseline vs Stressed",
+        xaxis_title="Date",
+        yaxis_title="Cumulative Return (%)",
+        hovermode='x unified',
+        template='plotly_white',
+        height=500,
+        legend=dict(x=0.01, y=0.99)
+    )
+    
+    return fig
+
+
+def plot_stress_comparison_drawdown(
+    baseline_returns: pd.Series,
+    stressed_returns: pd.Series,
+    scenario_name: str = "Stressed Scenario"
+) -> go.Figure:
+    """
+    Compare drawdown between baseline and stressed scenarios.
+    
+    Parameters
+    ----------
+    baseline_returns : pd.Series
+        Baseline portfolio returns
+    stressed_returns : pd.Series
+        Stressed portfolio returns
+    scenario_name : str
+        Name of the stress scenario
+        
+    Returns
+    -------
+    go.Figure
+        Plotly figure object
+    """
+    # Calculate drawdowns
+    baseline_cum = (1 + baseline_returns).cumprod()
+    baseline_running_max = baseline_cum.expanding().max()
+    baseline_dd = (baseline_cum - baseline_running_max) / baseline_running_max
+    
+    stressed_cum = (1 + stressed_returns).cumprod()
+    stressed_running_max = stressed_cum.expanding().max()
+    stressed_dd = (stressed_cum - stressed_running_max) / stressed_running_max
+    
+    fig = go.Figure()
+    
+    fig.add_trace(go.Scatter(
+        x=baseline_dd.index,
+        y=baseline_dd * 100,
+        mode='lines',
+        name='Baseline',
+        line=dict(color='steelblue', width=2),
+        fill='tozeroy',
+        fillcolor='rgba(70, 130, 180, 0.2)'
+    ))
+    
+    fig.add_trace(go.Scatter(
+        x=stressed_dd.index,
+        y=stressed_dd * 100,
+        mode='lines',
+        name=scenario_name,
+        line=dict(color='red', width=2, dash='dash'),
+        fill='tozeroy',
+        fillcolor='rgba(255, 0, 0, 0.1)'
+    ))
+    
+    fig.add_hline(y=0, line_dash="dot", line_color="gray")
+    
+    fig.update_layout(
+        title="Drawdown: Baseline vs Stressed",
+        xaxis_title="Date",
+        yaxis_title="Drawdown (%)",
+        hovermode='x unified',
+        template='plotly_white',
+        height=500,
+        legend=dict(x=0.01, y=0.01)
+    )
+    
+    return fig
+
+
+def plot_stress_comparison_volatility(
+    baseline_returns: pd.Series,
+    stressed_returns: pd.Series,
+    window: int = 20,
+    scenario_name: str = "Stressed Scenario"
+) -> go.Figure:
+    """
+    Compare rolling volatility between baseline and stressed scenarios.
+    
+    Parameters
+    ----------
+    baseline_returns : pd.Series
+        Baseline portfolio returns
+    stressed_returns : pd.Series
+        Stressed portfolio returns
+    window : int, default=20
+        Rolling window for volatility calculation
+    scenario_name : str
+        Name of the stress scenario
+        
+    Returns
+    -------
+    go.Figure
+        Plotly figure object
+    """
+    baseline_vol = baseline_returns.rolling(window=window).std() * np.sqrt(252)
+    stressed_vol = stressed_returns.rolling(window=window).std() * np.sqrt(252)
+    
+    fig = go.Figure()
+    
+    fig.add_trace(go.Scatter(
+        x=baseline_vol.index,
+        y=baseline_vol * 100,
+        mode='lines',
+        name='Baseline',
+        line=dict(color='steelblue', width=2)
+    ))
+    
+    fig.add_trace(go.Scatter(
+        x=stressed_vol.index,
+        y=stressed_vol * 100,
+        mode='lines',
+        name=scenario_name,
+        line=dict(color='red', width=2, dash='dash')
+    ))
+    
+    fig.update_layout(
+        title=f"Rolling {window}-Day Volatility: Baseline vs Stressed",
+        xaxis_title="Date",
+        yaxis_title="Annualized Volatility (%)",
+        hovermode='x unified',
+        template='plotly_white',
+        height=500,
+        legend=dict(x=0.01, y=0.99)
+    )
+    
+    return fig
+
+
+def plot_correlation_comparison(
+    baseline_corr: pd.DataFrame,
+    stressed_corr: pd.DataFrame
+) -> go.Figure:
+    """
+    Create side-by-side correlation heatmaps for baseline vs stressed.
+    
+    Parameters
+    ----------
+    baseline_corr : pd.DataFrame
+        Baseline correlation matrix
+    stressed_corr : pd.DataFrame
+        Stressed correlation matrix
+        
+    Returns
+    -------
+    go.Figure
+        Plotly figure object with subplots
+    """
+    from plotly.subplots import make_subplots
+    
+    fig = make_subplots(
+        rows=1, cols=2,
+        subplot_titles=("Baseline Correlations", "Stressed Correlations"),
+        horizontal_spacing=0.15
+    )
+    
+    # Baseline heatmap
+    fig.add_trace(
+        go.Heatmap(
+            z=baseline_corr.values,
+            x=baseline_corr.columns,
+            y=baseline_corr.index,
+            colorscale='RdBu',
+            zmid=0,
+            zmin=-1,
+            zmax=1,
+            text=np.round(baseline_corr.values, 2),
+            texttemplate='%{text}',
+            textfont={"size": 10},
+            showscale=False,
+            name='Baseline'
+        ),
+        row=1, col=1
+    )
+    
+    # Stressed heatmap
+    fig.add_trace(
+        go.Heatmap(
+            z=stressed_corr.values,
+            x=stressed_corr.columns,
+            y=stressed_corr.index,
+            colorscale='RdBu',
+            zmid=0,
+            zmin=-1,
+            zmax=1,
+            text=np.round(stressed_corr.values, 2),
+            texttemplate='%{text}',
+            textfont={"size": 10},
+            colorbar=dict(title="Correlation"),
+            name='Stressed'
+        ),
+        row=1, col=2
+    )
+    
+    fig.update_layout(
+        title="Correlation Matrix Comparison",
+        template='plotly_white',
+        height=500,
+        width=1000
+    )
+    
+    return fig

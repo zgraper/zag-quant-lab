@@ -67,6 +67,19 @@ construction and risk metrics.
 - Risk contribution by asset
 - Interactive visualizations (correlation matrix, drawdown curve, rolling metrics)
 
+### ⚠️ Stress Testing & Scenario Analysis
+Research-focused stress testing module for analyzing portfolio behavior under 
+hypothetical and historical stress scenarios. Understand how portfolios respond 
+to various risk conditions.
+
+**Key Features:**
+- Parameterized stress scenarios (return shock, volatility shock, correlation shock)
+- Historical stress scenarios (2008 GFC, 2020 COVID, 2022 drawdown)
+- Baseline vs stressed risk metrics comparison
+- Equity curve, drawdown, and volatility comparisons
+- Correlation matrix analysis under stress
+- Educational focus on scenario exploration and risk assessment
+
 ## Research Philosophy
 
 **ZAG Quant Lab** is designed with the following principles:
@@ -108,6 +121,7 @@ how relationships vary across different market states.
 1. **Regime Detection** - Analyze market regimes
 2. **Signal Research** - Evaluate trading signals
 3. **Portfolio & Risk** - Analyze portfolio risk characteristics
+4. **Stress Testing** - Test portfolios under stress scenarios
 
 Each module provides interactive controls for configuring analysis parameters 
 and exploring results through visualizations and statistics.
