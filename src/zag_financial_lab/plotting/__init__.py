@@ -808,8 +808,6 @@ def plot_correlation_comparison(
     go.Figure
         Plotly figure object with subplots
     """
-    from plotly.subplots import make_subplots
-    
     fig = make_subplots(
         rows=1, cols=2,
         subplot_titles=("Baseline Correlations", "Stressed Correlations"),

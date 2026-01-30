@@ -147,6 +147,10 @@ scenario_type = st.sidebar.selectbox(
 )
 
 # Scenario-specific parameters
+shock_magnitude = 0.0  # Initialize for all scenarios
+vol_multiplier = 1.0   # Initialize for all scenarios
+corr_increase = 0.0    # Initialize for all scenarios
+
 if scenario_type == "Return Shock":
     shock_pct = st.sidebar.slider(
         "Return Shock (%)",
@@ -335,12 +339,7 @@ if run_analysis:
     # Calculate comparative metrics
     with st.spinner("Calculating stress metrics..."):
         try:
-            # Ensure both return series are aligned for comparison
-            if "Historical" in scenario_type:
-                # For historical scenarios, we compare the historical period separately
-                stress_metrics = calculate_stress_metrics(baseline_returns, stressed_returns)
-            else:
-                stress_metrics = calculate_stress_metrics(baseline_returns, stressed_returns)
+            stress_metrics = calculate_stress_metrics(baseline_returns, stressed_returns)
             
         except Exception as e:
             st.error(f"Error calculating stress metrics: {str(e)}")

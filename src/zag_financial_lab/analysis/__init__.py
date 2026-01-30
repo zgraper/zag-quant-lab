@@ -711,19 +711,30 @@ def apply_volatility_shock(
     returns : pd.Series
         Daily returns
     vol_multiplier : float
-        Volatility multiplier (e.g., 2.0 for doubling volatility)
+        Volatility multiplier (e.g., 2.0 for doubling volatility).
+        Must be positive. Values less than 1 decrease volatility.
         
     Returns
     -------
     pd.Series
         Stressed returns with increased volatility
         
+    Raises
+    ------
+    ValueError
+        If vol_multiplier is not positive
+        
     Notes
     -----
     Returns are scaled around their mean to preserve the average return
     while increasing dispersion. This simulates market stress where
     volatility increases.
+    
+    Typical values: 2.0 (double volatility), 3.0 (triple volatility)
     """
+    if vol_multiplier <= 0:
+        raise ValueError(f"vol_multiplier must be positive, got {vol_multiplier}")
+    
     mean_return = returns.mean()
     return mean_return + (returns - mean_return) * vol_multiplier
 
@@ -746,12 +757,18 @@ def apply_correlation_shock(
     weights : dict
         Portfolio weights as {ticker: weight}
     corr_increase : float, default=0.5
-        How much to increase correlations (added to existing correlations)
+        How much to increase correlations (blending factor toward market average).
+        Must be in range [0, 1]. Higher values = stronger correlation increase.
         
     Returns
     -------
     pd.Series
         Stressed portfolio returns with increased correlations
+        
+    Raises
+    ------
+    ValueError
+        If corr_increase is not in range [0, 1]
         
     Notes
     -----
@@ -759,8 +776,12 @@ def apply_correlation_shock(
     shocks are complex and may require more sophisticated modeling.
     
     The implementation scales returns toward the market average to simulate
-    increased correlation.
+    increased correlation. corr_increase=0 means no change, corr_increase=1
+    means perfect correlation.
     """
+    if not 0 <= corr_increase <= 1:
+        raise ValueError(f"corr_increase must be in [0, 1], got {corr_increase}")
+    
     returns = prices_df.pct_change().dropna()
     
     # Calculate portfolio returns
@@ -869,6 +890,10 @@ def calculate_stress_metrics(
     These metrics describe historical characteristics under different
     scenarios and should not be interpreted as predictions.
     """
+    # Validate inputs
+    if len(baseline_returns) == 0 or len(stressed_returns) == 0:
+        raise ValueError("Return series cannot be empty")
+    
     # Calculate total returns
     baseline_total = (1 + baseline_returns).prod() - 1
     stressed_total = (1 + stressed_returns).prod() - 1
