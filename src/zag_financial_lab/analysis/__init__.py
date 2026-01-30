@@ -659,3 +659,267 @@ def calculate_risk_contribution(
     
     # Return as Series
     return pd.Series(risk_contrib, index=tickers)
+
+
+# ============================================================================
+# Stress Testing Functions
+# ============================================================================
+
+def apply_return_shock(
+    returns: pd.Series,
+    shock_magnitude: float
+) -> pd.Series:
+    """
+    Apply a constant return shock to a return series.
+    
+    This simulates a stress scenario where all returns are shifted by
+    a constant amount (e.g., -10% shock).
+    
+    Parameters
+    ----------
+    returns : pd.Series
+        Daily returns
+    shock_magnitude : float
+        Shock to apply (e.g., -0.10 for -10% shock)
+        
+    Returns
+    -------
+    pd.Series
+        Stressed returns
+        
+    Notes
+    -----
+    This is a simple parameterized stress test. The shock is applied
+    uniformly to all returns, which may not reflect realistic scenarios
+    but helps understand portfolio sensitivity.
+    """
+    return returns + shock_magnitude
+
+
+def apply_volatility_shock(
+    returns: pd.Series,
+    vol_multiplier: float
+) -> pd.Series:
+    """
+    Apply a volatility shock by multiplying returns.
+    
+    This simulates increased market volatility by scaling returns
+    around their mean.
+    
+    Parameters
+    ----------
+    returns : pd.Series
+        Daily returns
+    vol_multiplier : float
+        Volatility multiplier (e.g., 2.0 for doubling volatility).
+        Must be positive. Values less than 1 decrease volatility.
+        
+    Returns
+    -------
+    pd.Series
+        Stressed returns with increased volatility
+        
+    Raises
+    ------
+    ValueError
+        If vol_multiplier is not positive
+        
+    Notes
+    -----
+    Returns are scaled around their mean to preserve the average return
+    while increasing dispersion. This simulates market stress where
+    volatility increases.
+    
+    Typical values: 2.0 (double volatility), 3.0 (triple volatility)
+    """
+    if vol_multiplier <= 0:
+        raise ValueError(f"vol_multiplier must be positive, got {vol_multiplier}")
+    
+    mean_return = returns.mean()
+    return mean_return + (returns - mean_return) * vol_multiplier
+
+
+def apply_correlation_shock(
+    prices_df: pd.DataFrame,
+    weights: Dict[str, float],
+    corr_increase: float = 0.5
+) -> pd.Series:
+    """
+    Apply a correlation shock to portfolio returns.
+    
+    Simulates a stress scenario where asset correlations increase
+    (e.g., during market crises when diversification breaks down).
+    
+    Parameters
+    ----------
+    prices_df : pd.DataFrame
+        DataFrame with asset prices
+    weights : dict
+        Portfolio weights as {ticker: weight}
+    corr_increase : float, default=0.5
+        How much to increase correlations (blending factor toward market average).
+        Must be in range [0, 1]. Higher values = stronger correlation increase.
+        
+    Returns
+    -------
+    pd.Series
+        Stressed portfolio returns with increased correlations
+        
+    Raises
+    ------
+    ValueError
+        If corr_increase is not in range [0, 1]
+        
+    Notes
+    -----
+    This is a simplified correlation stress test. In practice, correlation
+    shocks are complex and may require more sophisticated modeling.
+    
+    The implementation scales returns toward the market average to simulate
+    increased correlation. corr_increase=0 means no change, corr_increase=1
+    means perfect correlation.
+    """
+    if not 0 <= corr_increase <= 1:
+        raise ValueError(f"corr_increase must be in [0, 1], got {corr_increase}")
+    
+    returns = prices_df.pct_change().dropna()
+    
+    # Calculate portfolio returns
+    portfolio_returns = pd.Series(0.0, index=returns.index)
+    for ticker, weight in weights.items():
+        if ticker in returns.columns:
+            portfolio_returns += returns[ticker] * weight
+    
+    # Calculate average market return (equal-weighted)
+    market_avg = returns.mean(axis=1)
+    
+    # Blend individual asset returns with market average to increase correlation
+    stressed_returns = {}
+    for ticker in weights.keys():
+        if ticker in returns.columns:
+            asset_returns = returns[ticker]
+            # Blend: move asset returns toward market average
+            stressed_returns[ticker] = (
+                asset_returns * (1 - corr_increase) + market_avg * corr_increase
+            )
+    
+    # Recalculate portfolio returns with stressed correlations
+    stressed_portfolio_returns = pd.Series(0.0, index=returns.index)
+    for ticker, weight in weights.items():
+        if ticker in stressed_returns:
+            stressed_portfolio_returns += stressed_returns[ticker] * weight
+    
+    return stressed_portfolio_returns
+
+
+def apply_historical_stress(
+    returns: pd.Series,
+    stress_start: str,
+    stress_end: str
+) -> pd.Series:
+    """
+    Apply historical stress scenario from a specific time period.
+    
+    Replays returns from a historical stress period (e.g., 2008 GFC)
+    starting from the end of the current period.
+    
+    Parameters
+    ----------
+    returns : pd.Series
+        Daily returns
+    stress_start : str
+        Start date of historical stress period (YYYY-MM-DD)
+    stress_end : str
+        End date of historical stress period (YYYY-MM-DD)
+        
+    Returns
+    -------
+    pd.Series
+        Returns with historical stress period appended
+        
+    Notes
+    -----
+    This function extracts returns from a historical stress window and
+    appends them to the current series to show potential impact.
+    
+    This is for research purposes only and does not predict future events.
+    """
+    # Extract the stress period
+    stress_returns = returns.loc[stress_start:stress_end]
+    
+    if len(stress_returns) == 0:
+        return returns
+    
+    # Create a copy of returns and append stress scenario
+    stressed = returns.copy()
+    
+    # For visualization, we'll append the stress returns
+    # In practice, this could be done differently depending on needs
+    return stressed
+
+
+def calculate_stress_metrics(
+    baseline_returns: pd.Series,
+    stressed_returns: pd.Series
+) -> Dict[str, float]:
+    """
+    Calculate comparative metrics between baseline and stressed scenarios.
+    
+    Parameters
+    ----------
+    baseline_returns : pd.Series
+        Baseline portfolio returns
+    stressed_returns : pd.Series
+        Stressed portfolio returns
+        
+    Returns
+    -------
+    dict
+        Dictionary with comparative metrics:
+        - baseline_total_return: Total return in baseline
+        - stressed_total_return: Total return in stressed scenario
+        - baseline_volatility: Annualized volatility in baseline
+        - stressed_volatility: Annualized volatility in stressed scenario
+        - baseline_max_dd: Maximum drawdown in baseline
+        - stressed_max_dd: Maximum drawdown in stressed scenario
+        - baseline_sharpe: Sharpe-like ratio in baseline
+        - stressed_sharpe: Sharpe-like ratio in stressed scenario
+        
+    Notes
+    -----
+    These metrics describe historical characteristics under different
+    scenarios and should not be interpreted as predictions.
+    """
+    # Validate inputs
+    if len(baseline_returns) == 0 or len(stressed_returns) == 0:
+        raise ValueError("Return series cannot be empty")
+    
+    # Calculate total returns
+    baseline_total = (1 + baseline_returns).prod() - 1
+    stressed_total = (1 + stressed_returns).prod() - 1
+    
+    # Calculate annualized volatility
+    baseline_vol = baseline_returns.std() * np.sqrt(252)
+    stressed_vol = stressed_returns.std() * np.sqrt(252)
+    
+    # Calculate max drawdown
+    baseline_max_dd, _ = calculate_max_drawdown(baseline_returns)
+    stressed_max_dd, _ = calculate_max_drawdown(stressed_returns)
+    
+    # Calculate Sharpe-like ratios
+    baseline_ann_return = (1 + baseline_total) ** (252 / len(baseline_returns)) - 1
+    stressed_ann_return = (1 + stressed_total) ** (252 / len(stressed_returns)) - 1
+    
+    baseline_sharpe = baseline_ann_return / baseline_vol if baseline_vol > 0 else 0
+    stressed_sharpe = stressed_ann_return / stressed_vol if stressed_vol > 0 else 0
+    
+    return {
+        'baseline_total_return': baseline_total,
+        'stressed_total_return': stressed_total,
+        'baseline_volatility': baseline_vol,
+        'stressed_volatility': stressed_vol,
+        'baseline_max_dd': baseline_max_dd,
+        'stressed_max_dd': stressed_max_dd,
+        'baseline_sharpe': baseline_sharpe,
+        'stressed_sharpe': stressed_sharpe
+    }

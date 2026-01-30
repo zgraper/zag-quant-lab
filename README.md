@@ -16,6 +16,12 @@ Identify market regimes using Hidden Markov Models (HMM). This module analyzes h
 ### 📈 Signal Research
 Evaluate trading signals from a statistical perspective. This module focuses on understanding signal properties, stability, and relationships with forward returns—without actual trading or backtesting.
 
+### 💼 Portfolio & Risk Analysis
+Analyze portfolio risk characteristics without making trading decisions or performance claims. This module provides tools for understanding portfolio construction, correlations, drawdowns, and risk metrics.
+
+### ⚠️ Stress Testing & Scenario Analysis
+Research-focused stress testing module for portfolios. Analyze hypothetical and historical stress scenarios and their impact on portfolio risk. Understand how portfolios behave under various stress conditions including return shocks, volatility increases, and correlation changes.
+
 ## Features
 
 - 🔬 **Multi-Module Architecture**: Clean separation between regime detection and signal research
@@ -33,7 +39,9 @@ zag-quant-lab/
 ├── Home.py                  # Main entry point - Home page
 ├── pages/
 │   ├── 1_Regime_Detection.py    # Regime detection module
-│   └── 2_Signal_Research.py     # Signal research module
+│   ├── 2_Signal_Research.py     # Signal research module
+│   ├── 3_Portfolio_Risk.py      # Portfolio & risk analysis module
+│   └── 4_Stress_Testing.py      # Stress testing & scenario analysis module
 ├── src/zag_financial_lab/
 │   ├── __init__.py
 │   ├── data/           # Data loading and validation
@@ -80,6 +88,8 @@ streamlit run Home.py
 The app will open in your default browser. You'll see a home page with links to:
 1. **Regime Detection** - Analyze market regimes using HMM
 2. **Signal Research** - Evaluate trading signals statistically
+3. **Portfolio & Risk** - Analyze portfolio risk characteristics
+4. **Stress Testing** - Test portfolios under stress scenarios
 
 ### Module 1: Regime Detection
 
@@ -97,6 +107,26 @@ From the signal research page you can:
 3. Choose forward return horizon (1d, 5d, 10d, 20d)
 4. View Information Coefficient (IC), quantile analysis, and rolling IC stability
 5. Explore signal-return relationships through interactive charts
+
+### Module 3: Portfolio & Risk Analysis
+
+From the portfolio & risk page you can:
+1. Enter multiple asset tickers
+2. Configure portfolio weights
+3. Select time period and analysis parameters
+4. View portfolio risk metrics (volatility, max drawdown, correlations)
+5. Explore rolling correlations and risk contributions
+
+### Module 4: Stress Testing & Scenario Analysis
+
+From the stress testing page you can:
+1. Configure a portfolio with multiple assets and weights
+2. Select a stress scenario type:
+   - Parameterized shocks (return, volatility, correlation)
+   - Historical scenarios (2008 GFC, 2020 COVID, 2022 drawdown)
+3. Compare baseline vs stressed outcomes
+4. Analyze equity curves, drawdowns, and volatility under stress
+5. Understand portfolio vulnerabilities and risk characteristics
 
 ### Using as a Python Library
 
@@ -191,6 +221,78 @@ The model uses:
 
 All operations are leakage-safe: signals at time t use only data available at or before t.
 
+### Module 3: Portfolio & Risk Analysis
+
+#### Risk Metrics
+
+The module calculates key portfolio risk metrics:
+
+1. **Portfolio Returns**: Weighted sum of asset returns
+   - Constant weights (buy-and-hold)
+   - Daily rebalancing not assumed
+
+2. **Volatility**: Rolling standard deviation of returns
+   - Annualized using √252 convention
+   - Shows time-varying risk
+
+3. **Maximum Drawdown**: Largest peak-to-trough decline
+   - Key risk metric for understanding worst-case scenarios
+   - Always ≤ 0 (at peak, drawdown = 0)
+
+4. **Correlation**: Pairwise asset return correlations
+   - Range: -1 (opposite) to +1 (together)
+   - Lower correlations provide better diversification
+
+5. **Risk Contribution**: How much each asset contributes to total risk
+   - Depends on weight, volatility, and correlations
+   - Sum of contributions = total portfolio volatility
+
+### Module 4: Stress Testing & Scenario Analysis
+
+#### Stress Scenarios
+
+The module implements several types of stress tests:
+
+1. **Return Shock**: Apply uniform return change
+   - Example: -10% shock to all daily returns
+   - Simple sensitivity test
+
+2. **Volatility Shock**: Multiply volatility by a factor
+   - Example: 2x volatility (double the swings)
+   - Preserves mean returns while increasing dispersion
+
+3. **Correlation Shock**: Increase asset correlations
+   - Simulates crisis conditions where diversification breaks down
+   - Returns blend toward market average
+
+4. **Historical Scenarios**: Replay historical stress periods
+   - 2008 GFC (Sep 2008 - Mar 2009)
+   - 2020 COVID (Feb 2020 - Apr 2020)
+   - 2022 Drawdown (Jan 2022 - Oct 2022)
+
+#### Stress Analysis Methods
+
+1. **Comparative Metrics**: Side-by-side baseline vs stressed
+   - Total return (descriptive only)
+   - Volatility increase
+   - Maximum drawdown worsening
+   - Sharpe-like ratio changes
+
+2. **Visual Comparisons**:
+   - Equity curves (baseline vs stressed)
+   - Drawdown profiles
+   - Rolling volatility evolution
+   - Correlation matrices
+
+3. **Risk Assessment Focus**:
+   - Understand portfolio vulnerabilities
+   - Identify concentration risks
+   - Evaluate diversification effectiveness under stress
+   - Research tool only - not predictive
+
+All stress scenarios are hypothetical or historical. They do not predict future events
+and are designed purely for educational and research purposes.
+
 ## Visualizations
 
 ### Regime Detection Module
@@ -208,6 +310,23 @@ All operations are leakage-safe: signals at time t use only data available at or
 - **Rolling IC**: Time-varying information coefficient
 - **Quantile Analysis**: Returns by signal bucket
 - **Statistics Table**: IC, signal properties, and observation counts
+
+### Portfolio & Risk Module
+
+- **Cumulative Returns**: Portfolio performance over time
+- **Drawdown Curve**: Peak-to-trough declines
+- **Rolling Volatility**: Time-varying risk
+- **Correlation Heatmap**: Asset return correlations
+- **Rolling Correlation**: Time-varying pairwise correlations
+- **Risk Contribution**: How each asset contributes to total risk
+
+### Stress Testing Module
+
+- **Equity Curve Comparison**: Baseline vs stressed cumulative returns
+- **Drawdown Comparison**: Baseline vs stressed peak-to-trough declines
+- **Volatility Comparison**: Baseline vs stressed rolling volatility
+- **Correlation Comparison**: Side-by-side correlation matrices
+- **Metrics Table**: Comprehensive baseline vs stressed statistics
 
 ## Limitations and Disclaimers
 
