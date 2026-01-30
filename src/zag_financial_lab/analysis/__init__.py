@@ -4,11 +4,14 @@ Analysis module for ZAG Financial Lab.
 This module provides statistical analysis tools for evaluating signals,
 including forward return calculations, information coefficients, and
 quantile analysis. All operations are leakage-safe.
+
+Additionally provides portfolio risk analysis tools including returns,
+volatility, correlation, and drawdown calculations.
 """
 
 import pandas as pd
 import numpy as np
-from typing import Tuple, Optional, Dict
+from typing import Tuple, Optional, Dict, List
 from scipy.stats import spearmanr, pearsonr
 
 
@@ -381,3 +384,278 @@ def analyze_signal_by_regime(
         })
     
     return pd.DataFrame(results)
+
+
+# ============================================================================
+# Portfolio Risk Analysis Functions
+# ============================================================================
+
+def calculate_portfolio_returns(
+    prices: pd.DataFrame,
+    weights: Dict[str, float]
+) -> pd.Series:
+    """
+    Calculate portfolio returns from component prices and weights.
+    
+    Computes daily returns for each asset and combines them using
+    portfolio weights to produce a portfolio return series.
+    
+    Parameters
+    ----------
+    prices : pd.DataFrame
+        DataFrame with asset prices. Columns are asset tickers.
+    weights : dict
+        Portfolio weights as {ticker: weight}. Should sum to 1.0.
+        
+    Returns
+    -------
+    pd.Series
+        Daily portfolio returns
+        
+    Notes
+    -----
+    LEAKAGE-SAFE: Returns at time t are computed using prices at t and t-1.
+    This is standard practice for portfolio analysis.
+    
+    Weights are assumed constant (buy-and-hold, no rebalancing).
+    For rebalancing analysis, this would need extension.
+    """
+    # Calculate daily returns for each asset
+    returns = prices.pct_change()
+    
+    # Apply weights and sum
+    weighted_returns = pd.Series(0.0, index=returns.index)
+    for ticker, weight in weights.items():
+        if ticker in returns.columns:
+            weighted_returns += returns[ticker] * weight
+    
+    return weighted_returns
+
+
+def calculate_portfolio_volatility(
+    returns: pd.Series,
+    window: int = 20,
+    annualization_factor: float = np.sqrt(252)
+) -> pd.Series:
+    """
+    Calculate rolling portfolio volatility.
+    
+    Computes rolling standard deviation of returns and annualizes it.
+    
+    Parameters
+    ----------
+    returns : pd.Series
+        Daily portfolio returns
+    window : int, default=20
+        Rolling window in days
+    annualization_factor : float, default=sqrt(252)
+        Factor to annualize daily volatility
+        
+    Returns
+    -------
+    pd.Series
+        Annualized rolling volatility
+        
+    Notes
+    -----
+    LEAKAGE-SAFE: Uses only backward-looking data at each point.
+    Standard assumption: 252 trading days per year.
+    """
+    rolling_std = returns.rolling(window=window).std()
+    annualized_vol = rolling_std * annualization_factor
+    
+    return annualized_vol
+
+
+def calculate_max_drawdown(
+    returns: pd.Series
+) -> Tuple[float, pd.Series]:
+    """
+    Calculate maximum drawdown and drawdown series.
+    
+    Maximum drawdown is the largest peak-to-trough decline in cumulative returns.
+    This is a key risk metric for portfolios.
+    
+    Parameters
+    ----------
+    returns : pd.Series
+        Daily returns
+        
+    Returns
+    -------
+    max_dd : float
+        Maximum drawdown as a fraction (e.g., -0.15 for -15%)
+    drawdown_series : pd.Series
+        Drawdown at each point in time
+        
+    Notes
+    -----
+    Drawdown at time t is:
+        (cumulative_value[t] - running_max[t]) / running_max[t]
+    
+    This is always <= 0 (at peak, drawdown = 0).
+    A drawdown of -0.20 means current value is 20% below previous peak.
+    """
+    # Calculate cumulative returns
+    cumulative = (1 + returns).cumprod()
+    
+    # Calculate running maximum
+    running_max = cumulative.expanding().max()
+    
+    # Calculate drawdown series
+    drawdown = (cumulative - running_max) / running_max
+    
+    # Maximum drawdown is the minimum value
+    max_dd = drawdown.min()
+    
+    return max_dd, drawdown
+
+
+def calculate_correlation_matrix(
+    prices: pd.DataFrame,
+    window: Optional[int] = None
+) -> pd.DataFrame:
+    """
+    Calculate correlation matrix of asset returns.
+    
+    Computes pairwise correlations between asset returns.
+    
+    Parameters
+    ----------
+    prices : pd.DataFrame
+        DataFrame with asset prices. Columns are asset tickers.
+    window : int, optional
+        If specified, uses only the last 'window' days.
+        If None, uses all available data.
+        
+    Returns
+    -------
+    pd.DataFrame
+        Correlation matrix
+        
+    Notes
+    -----
+    Returns are calculated as pct_change(), which is leakage-safe.
+    Correlation is computed on the full period (or last window days).
+    
+    High correlations indicate assets move together.
+    For diversification, lower correlations are preferred.
+    """
+    # Calculate returns
+    returns = prices.pct_change().dropna()
+    
+    # Use window if specified
+    if window is not None:
+        returns = returns.tail(window)
+    
+    # Calculate correlation matrix
+    corr_matrix = returns.corr()
+    
+    return corr_matrix
+
+
+def calculate_rolling_correlation(
+    prices: pd.DataFrame,
+    asset1: str,
+    asset2: str,
+    window: int = 60
+) -> pd.Series:
+    """
+    Calculate rolling correlation between two assets.
+    
+    Shows how correlation varies over time, useful for understanding
+    regime changes in asset relationships.
+    
+    Parameters
+    ----------
+    prices : pd.DataFrame
+        DataFrame with asset prices
+    asset1 : str
+        First asset ticker
+    asset2 : str
+        Second asset ticker
+    window : int, default=60
+        Rolling window in days
+        
+    Returns
+    -------
+    pd.Series
+        Rolling correlation over time
+        
+    Notes
+    -----
+    Correlation changes over time and may depend on market regime.
+    High correlation during crises (correlations go to 1) reduces diversification benefits.
+    """
+    # Calculate returns
+    returns = prices[[asset1, asset2]].pct_change().dropna()
+    
+    # Calculate rolling correlation
+    rolling_corr = returns[asset1].rolling(window=window).corr(returns[asset2])
+    
+    return rolling_corr
+
+
+def calculate_risk_contribution(
+    prices: pd.DataFrame,
+    weights: Dict[str, float],
+    window: Optional[int] = None
+) -> pd.Series:
+    """
+    Calculate risk contribution of each asset to portfolio volatility.
+    
+    Risk contribution shows how much each asset contributes to overall
+    portfolio risk. This is useful for risk budgeting and understanding
+    portfolio construction.
+    
+    Parameters
+    ----------
+    prices : pd.DataFrame
+        DataFrame with asset prices
+    weights : dict
+        Portfolio weights as {ticker: weight}
+    window : int, optional
+        If specified, uses only the last 'window' days for covariance.
+        If None, uses all available data.
+        
+    Returns
+    -------
+    pd.Series
+        Risk contribution by asset (sum = portfolio volatility)
+        
+    Notes
+    -----
+    Risk contribution is calculated as:
+        RC_i = w_i * (Cov @ w)_i / portfolio_volatility
+    
+    Where Cov is the covariance matrix and w is the weight vector.
+    
+    This decomposes total portfolio risk into contributions from each asset.
+    Assets with high weights and/or high volatility contribute more to risk.
+    """
+    # Calculate returns
+    returns = prices.pct_change().dropna()
+    
+    # Use window if specified
+    if window is not None:
+        returns = returns.tail(window)
+    
+    # Get ordered tickers and weights
+    tickers = list(weights.keys())
+    weight_array = np.array([weights[t] for t in tickers])
+    
+    # Calculate covariance matrix (annualized)
+    cov_matrix = returns[tickers].cov() * 252
+    
+    # Calculate portfolio variance
+    portfolio_variance = weight_array @ cov_matrix @ weight_array
+    portfolio_volatility = np.sqrt(portfolio_variance)
+    
+    # Calculate marginal contribution to risk
+    marginal_contrib = cov_matrix @ weight_array
+    
+    # Calculate risk contribution
+    risk_contrib = weight_array * marginal_contrib / portfolio_volatility
+    
+    # Return as Series
+    return pd.Series(risk_contrib, index=tickers)

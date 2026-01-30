@@ -298,3 +298,299 @@ def plot_transition_matrix(
     )
     
     return fig
+
+
+# ============================================================================
+# Portfolio Risk Visualizations
+# ============================================================================
+
+def plot_correlation_heatmap(
+    corr_matrix: pd.DataFrame,
+    title: str = "Asset Correlation Matrix"
+) -> go.Figure:
+    """
+    Visualize correlation matrix as a heatmap.
+    
+    Parameters
+    ----------
+    corr_matrix : pd.DataFrame
+        Correlation matrix (typically from calculate_correlation_matrix)
+    title : str
+        Chart title
+        
+    Returns
+    -------
+    go.Figure
+        Plotly figure object
+        
+    Notes
+    -----
+    Color scale:
+    - Red: Negative correlation (assets move opposite)
+    - White: No correlation
+    - Blue: Positive correlation (assets move together)
+    """
+    fig = go.Figure(data=go.Heatmap(
+        z=corr_matrix.values,
+        x=corr_matrix.columns,
+        y=corr_matrix.index,
+        colorscale='RdBu',
+        zmid=0,
+        zmin=-1,
+        zmax=1,
+        text=np.round(corr_matrix.values, 2),
+        texttemplate='%{text}',
+        textfont={"size": 10},
+        colorbar=dict(title="Correlation")
+    ))
+    
+    fig.update_layout(
+        title=title,
+        xaxis_title="",
+        yaxis_title="",
+        template='plotly_white',
+        height=500,
+        width=600
+    )
+    
+    return fig
+
+
+def plot_drawdown_curve(
+    drawdown: pd.Series,
+    title: str = "Portfolio Drawdown"
+) -> go.Figure:
+    """
+    Visualize drawdown over time.
+    
+    Parameters
+    ----------
+    drawdown : pd.Series
+        Drawdown series (typically from calculate_max_drawdown)
+    title : str
+        Chart title
+        
+    Returns
+    -------
+    go.Figure
+        Plotly figure object
+        
+    Notes
+    -----
+    Drawdown shows the decline from previous peak.
+    Lower values indicate larger losses from the peak.
+    Periods at 0 indicate new all-time highs.
+    """
+    fig = go.Figure()
+    
+    fig.add_trace(go.Scatter(
+        x=drawdown.index,
+        y=drawdown * 100,  # Convert to percentage
+        mode='lines',
+        name='Drawdown',
+        line=dict(color='red', width=2),
+        fill='tozeroy',
+        fillcolor='rgba(255, 0, 0, 0.2)'
+    ))
+    
+    fig.add_hline(y=0, line_dash="dash", line_color="gray")
+    
+    fig.update_layout(
+        title=title,
+        xaxis_title="Date",
+        yaxis_title="Drawdown (%)",
+        hovermode='x unified',
+        template='plotly_white',
+        height=400
+    )
+    
+    return fig
+
+
+def plot_rolling_volatility(
+    volatility: pd.Series,
+    title: str = "Rolling Portfolio Volatility"
+) -> go.Figure:
+    """
+    Visualize rolling volatility over time.
+    
+    Parameters
+    ----------
+    volatility : pd.Series
+        Rolling volatility series
+    title : str
+        Chart title
+        
+    Returns
+    -------
+    go.Figure
+        Plotly figure object
+        
+    Notes
+    -----
+    Shows how portfolio risk varies over time.
+    Higher volatility indicates higher risk periods.
+    """
+    fig = go.Figure()
+    
+    fig.add_trace(go.Scatter(
+        x=volatility.index,
+        y=volatility * 100,  # Convert to percentage
+        mode='lines',
+        name='Volatility',
+        line=dict(color='steelblue', width=2)
+    ))
+    
+    fig.update_layout(
+        title=title,
+        xaxis_title="Date",
+        yaxis_title="Annualized Volatility (%)",
+        hovermode='x unified',
+        template='plotly_white',
+        height=400
+    )
+    
+    return fig
+
+
+def plot_rolling_correlation(
+    rolling_corr: pd.Series,
+    asset1: str,
+    asset2: str,
+    title: Optional[str] = None
+) -> go.Figure:
+    """
+    Visualize rolling correlation between two assets.
+    
+    Parameters
+    ----------
+    rolling_corr : pd.Series
+        Rolling correlation series
+    asset1 : str
+        First asset name
+    asset2 : str
+        Second asset name
+    title : str, optional
+        Chart title (auto-generated if None)
+        
+    Returns
+    -------
+    go.Figure
+        Plotly figure object
+    """
+    if title is None:
+        title = f"Rolling Correlation: {asset1} vs {asset2}"
+    
+    fig = go.Figure()
+    
+    fig.add_trace(go.Scatter(
+        x=rolling_corr.index,
+        y=rolling_corr,
+        mode='lines',
+        name='Correlation',
+        line=dict(color='green', width=2)
+    ))
+    
+    fig.add_hline(y=0, line_dash="dash", line_color="gray")
+    fig.add_hline(y=0.5, line_dash="dot", line_color="lightgreen", annotation_text="Corr=0.5")
+    fig.add_hline(y=-0.5, line_dash="dot", line_color="lightcoral", annotation_text="Corr=-0.5")
+    
+    fig.update_layout(
+        title=title,
+        xaxis_title="Date",
+        yaxis_title="Correlation",
+        yaxis=dict(range=[-1, 1]),
+        hovermode='x unified',
+        template='plotly_white',
+        height=400
+    )
+    
+    return fig
+
+
+def plot_risk_contribution(
+    risk_contrib: pd.Series,
+    title: str = "Risk Contribution by Asset"
+) -> go.Figure:
+    """
+    Visualize risk contribution of each asset.
+    
+    Parameters
+    ----------
+    risk_contrib : pd.Series
+        Risk contribution by asset (from calculate_risk_contribution)
+    title : str
+        Chart title
+        
+    Returns
+    -------
+    go.Figure
+        Plotly figure object
+        
+    Notes
+    -----
+    Shows how much each asset contributes to total portfolio risk.
+    Sum of all contributions equals total portfolio volatility.
+    """
+    fig = go.Figure()
+    
+    fig.add_trace(go.Bar(
+        x=risk_contrib.index,
+        y=risk_contrib * 100,  # Convert to percentage
+        marker_color='steelblue'
+    ))
+    
+    fig.update_layout(
+        title=title,
+        xaxis_title="Asset",
+        yaxis_title="Risk Contribution (% volatility)",
+        template='plotly_white',
+        height=400
+    )
+    
+    return fig
+
+
+def plot_cumulative_returns(
+    returns: pd.Series,
+    title: str = "Cumulative Returns"
+) -> go.Figure:
+    """
+    Visualize cumulative returns over time.
+    
+    Parameters
+    ----------
+    returns : pd.Series
+        Daily returns
+    title : str
+        Chart title
+        
+    Returns
+    -------
+    go.Figure
+        Plotly figure object
+    """
+    cumulative = (1 + returns).cumprod()
+    
+    fig = go.Figure()
+    
+    fig.add_trace(go.Scatter(
+        x=cumulative.index,
+        y=(cumulative - 1) * 100,  # Convert to percentage gain
+        mode='lines',
+        name='Cumulative Return',
+        line=dict(color='navy', width=2)
+    ))
+    
+    fig.add_hline(y=0, line_dash="dash", line_color="gray")
+    
+    fig.update_layout(
+        title=title,
+        xaxis_title="Date",
+        yaxis_title="Cumulative Return (%)",
+        hovermode='x unified',
+        template='plotly_white',
+        height=400
+    )
+    
+    return fig
