@@ -55,6 +55,18 @@ understanding signal properties, stability, and relationships with forward retur
 - Rolling IC stability tracking
 - Optional regime-conditioned analysis
 
+### 💼 Portfolio & Risk
+Analyze portfolio risk characteristics without making trading decisions or 
+performance claims. This module provides tools for understanding portfolio 
+construction and risk metrics.
+
+**Key Features:**
+- Multi-asset portfolio construction
+- Returns, volatility, and maximum drawdown calculation
+- Correlation and rolling correlation analysis
+- Risk contribution by asset
+- Interactive visualizations (correlation matrix, drawdown curve, rolling metrics)
+
 ## Research Philosophy
 
 **ZAG Quant Lab** is designed with the following principles:
@@ -95,6 +107,7 @@ how relationships vary across different market states.
 👈 Use the sidebar to navigate between modules:
 1. **Regime Detection** - Analyze market regimes
 2. **Signal Research** - Evaluate trading signals
+3. **Portfolio & Risk** - Analyze portfolio risk characteristics
 
 Each module provides interactive controls for configuring analysis parameters 
 and exploring results through visualizations and statistics.
