@@ -1,5 +1,5 @@
 """
-ZAG Financial Lab - Market Regime Detection Application
+ZAG Financial Lab - Market Regime Detection Module
 
 A research tool for analyzing market regimes using Hidden Markov Models.
 This application is designed for educational and research purposes only.
@@ -15,7 +15,7 @@ import traceback
 from pathlib import Path
 
 # Add src to path
-sys.path.insert(0, str(Path(__file__).parent / 'src'))
+sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
 
 from zag_financial_lab.data import load_price_data, validate_price_data
 from zag_financial_lab.features import prepare_regime_features, get_feature_array
@@ -36,18 +36,18 @@ from zag_financial_lab.plotting import (
 
 # Page configuration
 st.set_page_config(
-    page_title="ZAG Financial Lab - Regime Detection",
+    page_title="Regime Detection - ZAG Quant Lab",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
 # Title and introduction
-st.title("📊 ZAG Financial Lab")
-st.subheader("Market Regime Detection Using Hidden Markov Models")
+st.title("📊 Market Regime Detection")
+st.subheader("Using Hidden Markov Models")
 
 st.markdown("""
-This application performs statistical analysis of market regimes using a Gaussian Hidden Markov Model (HMM).
+This module performs statistical analysis of market regimes using a Gaussian Hidden Markov Model (HMM).
 It identifies distinct market states based on historical price patterns, returns, and volatility.
 
 **Important Notes:**
@@ -104,7 +104,7 @@ run_analysis = st.sidebar.button("Run Analysis", type="primary")
 st.sidebar.markdown("---")
 st.sidebar.markdown("""
 ### About
-**ZAG Financial Lab** provides quantitative research tools for market analysis.
+**ZAG Quant Lab** provides quantitative research tools for market analysis.
 
 This regime detection model uses:
 - Log returns (leakage-safe)
@@ -316,7 +316,7 @@ else:
 st.markdown("---")
 st.markdown("""
 <div style='text-align: center; color: gray; font-size: 0.9em;'>
-<p><strong>ZAG Financial Lab</strong> - Quantitative Market Research</p>
+<p><strong>ZAG Quant Lab</strong> - Quantitative Market Research</p>
 <p>This tool is for research and educational purposes only. It does not provide investment advice or trading signals.</p>
 </div>
 """, unsafe_allow_html=True)
